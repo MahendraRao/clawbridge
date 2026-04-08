@@ -133,6 +133,45 @@ p, li {
   color: #cce3ff;
 }
 
+.badge-ok {
+  display: inline-block;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(34,197,94,0.14);
+  color: #86efac;
+  border: 1px solid rgba(34,197,94,0.3);
+}
+
+.badge-bad {
+  display: inline-block;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(239,68,68,0.14);
+  color: #fca5a5;
+  border: 1px solid rgba(239,68,68,0.3);
+}
+
+.form-grid {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.form-grid select,
+.form-grid input {
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(0,0,0,0.2);
+  color: #fff;
+  font-size: 1rem;
+}
+
+.muted-text {
+  color: #b8c7dc;
+  line-height: 1.6;
+}
+
 .error-text {
   color: #fca5a5;
 }

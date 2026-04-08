@@ -1,9 +1,10 @@
 import cors from "cors";
 import express from "express";
 import os from "node:os";
+import fs from "node:fs/promises";
+import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import type { SystemCheckResponse, ToolCheck } from "./types";
 
 const execFileAsync = promisify(execFile);
 const app = express();
@@ -12,87 +13,194 @@ const PORT = 8787;
 app.use(cors());
 app.use(express.json());
 
-async function checkCommand(
-  name: string,
-  command: string,
-  args: string[] = ["--version"]
-): Promise<ToolCheck> {
+const MODEL_CATALOG = {
+  openai: {
+    label: "OpenAI",
+    models: ["gpt-5.4", "gpt-5.4-mini", "gpt-5.4-nano", "custom"]
+  },
+  anthropic: {
+    label: "Anthropic",
+    models: ["claude-opus-4-6", "claude-sonnet-4-6", "custom"]
+  },
+  ollama: {
+    label: "Ollama",
+    models: ["qwen3.5", "llama3.3", "custom"]
+  },
+  local: {
+    label: "Local",
+    models: ["custom"]
+  }
+};
+
+async function runCommand(command: string, args: string[]) {
   try {
     const { stdout, stderr } = await execFileAsync(command, args);
-    const output = (stdout || stderr || "").trim().split("\n")[0];
     return {
-      name,
       ok: true,
-      version: output || "installed"
+      output: (stdout || stderr || "").trim()
     };
   } catch (error) {
     return {
-      name,
       ok: false,
-      details:
-        error instanceof Error ? error.message : `Unable to execute ${command}`
+      output: error instanceof Error ? error.message : "Unknown command error"
     };
   }
 }
 
-function getRecommendedInstallCommand(platform: NodeJS.Platform): string {
-  if (platform === "win32") {
-    return "iwr -useb https://openclaw.ai/install.ps1 | iex";
-  }
+async function checkCommand(name: string, command: string, args: string[]) {
+  const result = await runCommand(command, args);
 
-  return "curl -fsSL https://openclaw.ai/install.sh | bash";
+  return {
+    name,
+    ok: result.ok,
+    version: result.ok ? result.output.split("\n")[0] : undefined,
+    details: result.ok ? undefined : result.output
+  };
 }
 
-async function buildSystemCheck(): Promise<SystemCheckResponse> {
-  const platform = os.platform();
+function buildProviderEnv({
+  provider,
+  apiKey,
+  model,
+  customModel,
+  ollamaHost
+}: {
+  provider: string;
+  apiKey?: string;
+  model: string;
+  customModel?: string;
+  ollamaHost?: string;
+}) {
+  const finalModel = model === "custom" ? customModel?.trim() : model;
+
+  if (!finalModel) {
+    return {
+      ok: false,
+      message: "Custom model name is required.",
+      config: ""
+    };
+  }
+
+  if (
+    (provider === "openai" || provider === "anthropic") &&
+    !apiKey?.trim()
+  ) {
+    return {
+      ok: false,
+      message: "API key is required for hosted providers.",
+      config: ""
+    };
+  }
+
+  const configMap: Record<string, string> = {
+    openai: `PROVIDER=openai
+OPENAI_API_KEY=${apiKey}
+OPENAI_MODEL=${finalModel}`,
+    anthropic: `PROVIDER=anthropic
+ANTHROPIC_API_KEY=${apiKey}
+ANTHROPIC_MODEL=${finalModel}`,
+    ollama: `PROVIDER=ollama
+OLLAMA_HOST=${ollamaHost || "http://localhost:11434"}
+OLLAMA_MODEL=${finalModel}`,
+    local: `PROVIDER=local
+LOCAL_MODEL=${finalModel}`
+  };
+
+  return {
+    ok: true,
+    message: `${provider} config generated.`,
+    config: configMap[provider]
+  };
+}
+
+app.get("/api/model-catalog", (_req, res) => {
+  res.json(MODEL_CATALOG);
+});
+
+app.get("/api/system-check", async (_req, res) => {
   const [node, git, openclaw] = await Promise.all([
     checkCommand("Node.js", "node", ["-v"]),
     checkCommand("Git", "git", ["--version"]),
     checkCommand("OpenClaw", "openclaw", ["--version"])
   ]);
 
-  const recommendedNextSteps: string[] = [];
-
-  if (!node.ok) recommendedNextSteps.push("Install Node.js 24 or later.");
-  if (!git.ok) recommendedNextSteps.push("Install Git.");
-  if (!openclaw.ok) {
-    recommendedNextSteps.push("Install OpenClaw using the recommended installer.");
-  } else {
-    recommendedNextSteps.push("Run: openclaw status");
-    recommendedNextSteps.push("Run: openclaw gateway status");
-    recommendedNextSteps.push("Run: openclaw doctor");
-  }
-
-  return {
+  res.json({
     ok: true,
-    os: platform,
+    os: os.platform(),
     arch: os.arch(),
-    shell: process.env.SHELL || process.env.ComSpec || "unknown",
+    shell: process.env.SHELL || "unknown",
     node,
     git,
     openclaw,
-    recommendedInstallCommand: getRecommendedInstallCommand(platform),
-    recommendedNextSteps
-  };
-}
-
-app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, service: "clawbridge-core" });
+    recommendedInstallCommand:
+      "curl -fsSL https://openclaw.ai/install.sh | bash",
+    recommendedNextSteps: [
+      "Run installer",
+      "Refresh verification",
+      "Generate provider config",
+      "Run doctor"
+    ]
+  });
 });
 
-app.get("/api/system-check", async (_req, res) => {
+app.post("/api/provider-config", async (req, res) => {
+  const output = buildProviderEnv(req.body);
+  res.json(output);
+});
+
+app.post("/api/save-config", async (req, res) => {
   try {
-    const result = await buildSystemCheck();
-    res.json(result);
+    const { config } = req.body;
+
+    const outputPath = path.join(process.cwd(), ".env.clawbridge");
+    await fs.writeFile(outputPath, config, "utf8");
+
+    res.json({
+      ok: true,
+      message: `Saved config to ${outputPath}`
+    });
   } catch (error) {
-    res.status(500).json({
+    res.json({
       ok: false,
       message:
-        error instanceof Error ? error.message : "Unknown system check error"
+        error instanceof Error ? error.message : "Failed to save config"
     });
   }
+});
+
+app.get("/api/doctor-preview", (_req, res) => {
+  res.json({
+    commands: [
+      "openclaw --version",
+      "openclaw status",
+      "openclaw doctor"
+    ]
+  });
+});
+
+app.post("/api/run-command", async (req, res) => {
+  const { command } = req.body;
+
+  const allowed: Record<string, string[]> = {
+    version: ["openclaw", "--version"],
+    status: ["openclaw", "status"],
+    doctor: ["openclaw", "doctor"]
+  };
+
+  const cmd = allowed[command];
+
+  if (!cmd) {
+    return res.json({
+      ok: false,
+      output: "Command not allowed"
+    });
+  }
+
+  const result = await runCommand(cmd[0], cmd.slice(1));
+  res.json(result);
 });
 
 app.listen(PORT, () => {
   console.log(`ClawBridge core API listening on http://localhost:${PORT}`);
 });
+

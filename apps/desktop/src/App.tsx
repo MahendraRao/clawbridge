@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type ToolCheck = {
   name: string;
@@ -19,70 +19,184 @@ type SystemCheckResponse = {
   recommendedNextSteps: string[];
 };
 
+type ModelCatalog = Record<
+  string,
+  {
+    label: string;
+    models: string[];
+  }
+>;
+
+type ProviderConfigResponse = {
+  ok: boolean;
+  message: string;
+  config: string;
+};
+
 function StatusBadge({ ok }: { ok: boolean }) {
   return (
-    <span
-      style={{
-        display: "inline-block",
-        padding: "0.35rem 0.7rem",
-        borderRadius: "999px",
-        fontSize: "0.85rem",
-        fontWeight: 700,
-        background: ok ? "rgba(34,197,94,0.14)" : "rgba(239,68,68,0.14)",
-        color: ok ? "#86efac" : "#fca5a5",
-        border: ok ? "1px solid rgba(34,197,94,0.3)" : "1px solid rgba(239,68,68,0.3)"
-      }}
-    >
+    <span className={ok ? "badge-ok" : "badge-bad"}>
       {ok ? "Installed" : "Missing"}
     </span>
   );
 }
 
-function CheckCard({ title, check }: { title: string; check: ToolCheck }) {
+function CheckCard({
+  title,
+  check
+}: {
+  title: string;
+  check: ToolCheck;
+}) {
   return (
     <div className="panel">
       <div className="panel-header">
         <h3>{title}</h3>
         <StatusBadge ok={check.ok} />
       </div>
-      <p><strong>Command:</strong> {check.name}</p>
-      <p><strong>Version:</strong> {check.version || "Not detected"}</p>
+
+      <p>
+        <strong>Command:</strong> {check.name}
+      </p>
+
+      <p>
+        <strong>Version:</strong> {check.version || "Not detected"}
+      </p>
+
       {!check.ok && check.details ? (
-        <p className="error-text"><strong>Details:</strong> {check.details}</p>
+        <p className="error-text">
+          <strong>Details:</strong> {check.details}
+        </p>
       ) : null}
     </div>
   );
 }
 
 export default function App() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [result, setResult] = useState<SystemCheckResponse | null>(null);
+  const [doctorCommands, setDoctorCommands] = useState<string[]>([]);
+  const [modelCatalog, setModelCatalog] = useState<ModelCatalog>({});
+  const [providerConfig, setProviderConfig] = useState("");
+  const [configMessage, setConfigMessage] = useState("");
+  const [commandOutput, setCommandOutput] = useState("");
+  const [saveMessage, setSaveMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const [provider, setProvider] = useState("openai");
+  const [apiKey, setApiKey] = useState("");
+  const [selectedModel, setSelectedModel] = useState("gpt-5.4");
+  const [customModel, setCustomModel] = useState("");
+  const [ollamaHost, setOllamaHost] = useState("http://localhost:11434");
+
+  useEffect(() => {
+    async function loadModelCatalog() {
+      const res = await fetch("/api/model-catalog");
+      const data: ModelCatalog = await res.json();
+      setModelCatalog(data);
+
+      const defaultOpenAI =
+        data.openai?.models?.find((m) => m !== "custom") || "custom";
+
+      setSelectedModel(defaultOpenAI);
+    }
+
+    loadModelCatalog();
+  }, []);
+
+  const providerModels = useMemo(() => {
+    return modelCatalog[provider]?.models || ["custom"];
+  }, [modelCatalog, provider]);
+
+  function getDefaultModel(nextProvider: string) {
+    const models = modelCatalog[nextProvider]?.models || ["custom"];
+    return models.find((m) => m !== "custom") || "custom";
+  }
+
+  function handleProviderChange(nextProvider: string) {
+    setProvider(nextProvider);
+    setSelectedModel(getDefaultModel(nextProvider));
+    setCustomModel("");
+    setProviderConfig("");
+    setConfigMessage("");
+    setSaveMessage("");
+  }
 
   async function runSystemCheck() {
-    try {
-      setLoading(true);
-      setError("");
+    setLoading(true);
 
-      const response = await fetch("/api/system-check");
-      if (!response.ok) {
-        throw new Error(`System check failed with status ${response.status}`);
-      }
+    const res = await fetch("/api/system-check");
+    const data = await res.json();
 
-      const data: SystemCheckResponse = await response.json();
-      setResult(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
-      setResult(null);
-    } finally {
-      setLoading(false);
-    }
+    setResult(data);
+    setLoading(false);
   }
 
-  async function copyCommand() {
-    if (!result?.recommendedInstallCommand) return;
-    await navigator.clipboard.writeText(result.recommendedInstallCommand);
+  async function loadDoctorPreview() {
+    const res = await fetch("/api/doctor-preview");
+    const data = await res.json();
+    setDoctorCommands(data.commands);
   }
+
+  async function generateProviderConfig() {
+    const res = await fetch("/api/provider-config", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        provider,
+        apiKey,
+        model: selectedModel,
+        customModel,
+        ollamaHost
+      })
+    });
+
+    const data: ProviderConfigResponse = await res.json();
+    setProviderConfig(data.config);
+    setConfigMessage(data.message);
+    setSaveMessage("");
+  }
+
+  async function saveConfigToFile() {
+    const res = await fetch("/api/save-config", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        config: providerConfig
+      })
+    });
+
+    const data = await res.json();
+    setSaveMessage(data.message);
+  }
+
+  async function runDoctorCommand(
+    command: "version" | "status" | "doctor"
+  ) {
+    const res = await fetch("/api/run-command", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ command })
+    });
+
+    const data = await res.json();
+    setCommandOutput(data.output);
+  }
+
+  async function copyText(text: string) {
+    await navigator.clipboard.writeText(text);
+  }
+
+  const showApiKey =
+    provider === "openai" || provider === "anthropic";
+
+  const showOllamaHost = provider === "ollama";
+  const showCustomModel = selectedModel === "custom";
 
   return (
     <div className="app-shell">
@@ -90,42 +204,28 @@ export default function App() {
         <div className="eyebrow">CLAWBRIDGE</div>
         <h1>Beginner-friendly OpenClaw wrapper</h1>
         <p className="hero-copy">
-          A guided local setup experience for detecting prerequisites,
-          suggesting the correct OpenClaw install path, and preparing first launch.
+          Guided onboarding, provider configuration, and first-run setup.
         </p>
 
         <div className="hero-actions">
-          <button className="primary-btn" onClick={runSystemCheck} disabled={loading}>
-            {loading ? "Running system check..." : "Run system check"}
+          <button
+            className="primary-btn"
+            onClick={runSystemCheck}
+            disabled={loading}
+          >
+            {loading ? "Checking..." : "Run system check"}
+          </button>
+
+          <button
+            className="secondary-btn"
+            onClick={loadDoctorPreview}
+          >
+            Doctor preview
           </button>
         </div>
-
-        {error ? <p className="error-text">Error: {error}</p> : null}
       </section>
 
-      <section className="grid-two">
-        <div className="panel">
-          <h2>MVP flow</h2>
-          <ul>
-            <li>Detect OS and shell</li>
-            <li>Check Node and Git</li>
-            <li>Check OpenClaw installation</li>
-            <li>Prepare the recommended installer command</li>
-            <li>Guide the next verification steps</li>
-          </ul>
-        </div>
-
-        <div className="panel">
-          <h2>Dummy example</h2>
-          <p><strong>User ask:</strong> Install OpenClaw on my Mac with OpenAI.</p>
-          <p>
-            ClawBridge checks the machine, suggests the install command, validates
-            prerequisites, and then guides the user into first launch and provider setup.
-          </p>
-        </div>
-      </section>
-
-      {result ? (
+      {result && (
         <>
           <section className="grid-two">
             <div className="panel">
@@ -137,9 +237,17 @@ export default function App() {
 
             <div className="panel">
               <h2>Recommended install command</h2>
-              <pre className="code-block">{result.recommendedInstallCommand}</pre>
-              <button className="secondary-btn" onClick={copyCommand}>
-                Copy command
+              <pre className="code-block">
+                {result.recommendedInstallCommand}
+              </pre>
+
+              <button
+                className="secondary-btn"
+                onClick={() =>
+                  copyText(result.recommendedInstallCommand)
+                }
+              >
+                Copy install command
               </button>
             </div>
           </section>
@@ -159,7 +267,149 @@ export default function App() {
             </ol>
           </section>
         </>
-      ) : null}
+      )}
+
+      {doctorCommands.length > 0 && (
+        <section className="panel">
+          <h2>Doctor preview</h2>
+          {doctorCommands.map((cmd) => (
+            <pre key={cmd} className="code-block">
+              {cmd}
+            </pre>
+          ))}
+        </section>
+      )}
+
+      <section className="panel">
+        <h2>Provider setup (current recommended models)</h2>
+
+        <p className="muted-text">
+          Hosted providers use curated current model lists.
+          Ollama and local providers support any custom model.
+        </p>
+
+        <div className="form-grid">
+          <select
+            value={provider}
+            onChange={(e) => handleProviderChange(e.target.value)}
+          >
+            <option value="openai">OpenAI</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="ollama">Ollama</option>
+            <option value="local">Local / Custom</option>
+          </select>
+
+          {showApiKey && (
+            <input
+              type="password"
+              placeholder={
+                provider === "openai"
+                  ? "Enter OpenAI API key"
+                  : "Enter Anthropic API key"
+              }
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+            />
+          )}
+
+          {showOllamaHost && (
+            <input
+              type="text"
+              placeholder="Ollama host"
+              value={ollamaHost}
+              onChange={(e) => setOllamaHost(e.target.value)}
+            />
+          )}
+
+          <select
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value)}
+          >
+            {providerModels.map((model) => (
+              <option key={model} value={model}>
+                {model === "custom" ? "Custom model" : model}
+              </option>
+            ))}
+          </select>
+
+          {showCustomModel && (
+            <input
+              type="text"
+              placeholder="Enter custom model name"
+              value={customModel}
+              onChange={(e) => setCustomModel(e.target.value)}
+            />
+          )}
+
+          <button
+            className="primary-btn"
+            onClick={generateProviderConfig}
+          >
+            Generate config
+          </button>
+        </div>
+
+        {configMessage && (
+          <p className="muted-text">{configMessage}</p>
+        )}
+
+        {providerConfig && (
+          <>
+            <pre className="code-block">{providerConfig}</pre>
+
+            <div className="hero-actions">
+              <button
+                className="secondary-btn"
+                onClick={() => copyText(providerConfig)}
+              >
+                Copy provider config
+              </button>
+
+              <button
+                className="primary-btn"
+                onClick={saveConfigToFile}
+              >
+                Save as .env
+              </button>
+            </div>
+
+            {saveMessage && (
+              <p className="muted-text">{saveMessage}</p>
+            )}
+          </>
+        )}
+      </section>
+
+      <section className="panel">
+        <h2>Run verification commands</h2>
+
+        <div className="hero-actions">
+          <button
+            className="secondary-btn"
+            onClick={() => runDoctorCommand("version")}
+          >
+            Version
+          </button>
+
+          <button
+            className="secondary-btn"
+            onClick={() => runDoctorCommand("status")}
+          >
+            Status
+          </button>
+
+          <button
+            className="secondary-btn"
+            onClick={() => runDoctorCommand("doctor")}
+          >
+            Doctor
+          </button>
+        </div>
+
+        {commandOutput && (
+          <pre className="code-block">{commandOutput}</pre>
+        )}
+      </section>
     </div>
   );
 }
