@@ -6,6 +6,18 @@ It wraps the official OpenClaw installation flow with a **guided local UI + API 
 
 ---
 
+## Current implementation status
+
+ClawBridge is currently a **web UI + local API MVP**.
+
+Today it runs as:
+- a React + Vite frontend
+- a local Express + TypeScript backend
+
+It is **not yet a packaged Electron desktop app**. Full desktop packaging is planned in a later phase.
+
+---
+
 ## ✨ Why this exists
 
 OpenClaw is powerful, but many users still struggle with:
@@ -104,15 +116,17 @@ clawbridge/
 
 ## ⚙️ Local development setup
 
-Prerequisites
+### Prerequisites
 - Node.js 24
 - pnpm 10+
 - Git
 - macOS / Linux / Windows
 
 ## Clone the repo
+ 
 - git clone https://github.com/MahendraRao/clawbridge.git
 - cd clawbridge
+
 
 
 Use the correct Node version
@@ -122,6 +136,9 @@ If Node 24 is not installed:
 
 - nvm install 24
 - nvm use 24
+
+Enable Corepack
+- corepack enable
 
 Install dependencies
 - pnpm install
@@ -166,6 +183,7 @@ Start the project
 ## Recommended command:
 - curl -fsSL https://openclaw.ai/install.sh | bash
 
+```md
 ## 📸 Screenshots
 
 
@@ -183,6 +201,7 @@ Recommended screenshots:
 
 ![OpenClaw State](<./docs/screenshots/openclaw-state.png>)
 
+```
 
 ---
 
@@ -203,7 +222,7 @@ Phase 2 — Guided onboarding
 - richer diagnostics
 - improved troubleshooting UX
 
-Phase 3 — Desktop wrapper
+Phase 3 — web-assisted wrapper
 - Electron packaging
 - secrets storage
 - update flow
@@ -220,12 +239,33 @@ Phase 3 — Desktop wrapper
 - avoid blind auto-run flows until hardened mode is added
 
 ## 🧩 Troubleshooting
-* -> pnpm: command not found
+Issue as  -> pnpm: command not found
 
 # Run:
 
 * nvm use 24
 * npm install -g pnpm
+
+
+## Adding this troubleshooting note to `README.md`
+
+```md 
+## 🧩 Environment consistency notes
+
+This repo is pinned to:
+- Node 24 via `.nvmrc`
+- pnpm 10 via `packageManager`
+
+## If commands fail after entering the project directory, run:
+
+* nvm use
+* corepack enable
+* pnpm -v
+
+Then continue with:
+                    * pnpm install
+                    * pnpm dev
+```
 
 ## OpenClaw shows missing
 
