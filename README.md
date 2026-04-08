@@ -172,15 +172,15 @@ Recommended screenshots:
 
 * homepage before system check
 
-![Homepage](<Screenshot 2026-04-08 at 12.50.56 PM.png>)
+![Homepage](<./docs/screenshots/homepage.png>)
 
 * machine summary after check
 
-![System Check](<Screenshot 2026-04-08 at 12.51.17 PM.png>)
+![System Check](<./docs/screenshots/system-check.png>)
 
 * OpenClaw missing state
 
-![OpenClaw State](<Screenshot 2026-04-08 at 1.53.50 PM.png>)
+![OpenClaw State](<./docs/screenshots/openclaw-state.png>)
 
 
 ---
