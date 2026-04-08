@@ -8,3 +8,5 @@ out
 .env.*
 *.log
 coverage
+.env.clawbridge
+packages/core/.env.clawbridge
