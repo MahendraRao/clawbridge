@@ -1,0 +1,22 @@
+{
+  "name": "@clawbridge/core",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "node -e \"console.log('lint placeholder: add eslint later')\"",
+    "doctor-demo": "tsx src/demo.ts"
+  },
+  "dependencies": {
+    "execa": "^9.5.2",
+    "semver": "^7.7.2"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "@types/node": "^24.0.0"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "clawbridge",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Beginner-friendly OpenClaw installer, verifier, and launcher",
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm --filter @clawbridge/desktop dev",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "doctor": "pnpm --filter @clawbridge/core run doctor-demo"
+  }
+}
