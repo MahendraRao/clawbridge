@@ -1,37 +1,12 @@
-import {
-  checkGitInstalled,
-  checkNodeVersion,
-  detectOpenClaw,
-  detectPlatform,
-  launchDryRun,
-  recommendedInstallCommand,
-  validateProviderConfig,
-} from "./index.js";
+import os from "node:os";
 
-async function main() {
-  const steps = [
-    detectPlatform(),
-    checkNodeVersion(),
-    await checkGitInstalled(),
-    await detectOpenClaw(),
-    recommendedInstallCommand(),
-    validateProviderConfig({
-      provider: "openai",
-      model: "gpt-4.1",
-      apiKeyPresent: false,
-    }),
-    await launchDryRun(),
-  ];
-
-  for (const step of steps) {
-    console.log(`\n[${step.status.toUpperCase()}] ${step.name}`);
-    console.log(`- ${step.summary}`);
-    if (step.details) console.log(`- details: ${step.details}`);
-    if (step.fix) console.log(`- fix: ${step.fix}`);
-  }
-}
-
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+console.log("ClawBridge doctor demo");
+console.log("----------------------");
+console.log(`OS: ${os.platform()}`);
+console.log(`Arch: ${os.arch()}`);
+console.log(`Shell: ${process.env.SHELL || process.env.ComSpec || "unknown"}`);
+console.log("");
+console.log("Next:");
+console.log("1. Start the API with: pnpm dev:api");
+console.log("2. Start the UI with: pnpm dev:web");
+console.log("3. Or run both with: pnpm dev");

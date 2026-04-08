@@ -1,16 +1,18 @@
-export type StepStatus = "pass" | "warn" | "fail";
-
-export interface StepResult {
+export type ToolCheck = {
   name: string;
-  status: StepStatus;
-  summary: string;
+  ok: boolean;
+  version?: string;
   details?: string;
-  fix?: string;
-}
+};
 
-export interface ProviderConfig {
-  provider: string;
-  model: string;
-  baseUrl?: string;
-  apiKeyPresent: boolean;
-}
+export type SystemCheckResponse = {
+  ok: boolean;
+  os: string;
+  arch: string;
+  shell: string;
+  node: ToolCheck;
+  git: ToolCheck;
+  openclaw: ToolCheck;
+  recommendedInstallCommand: string;
+  recommendedNextSteps: string[];
+};

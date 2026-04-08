@@ -1,113 +1,98 @@
+import cors from "cors";
+import express from "express";
 import os from "node:os";
-import process from "node:process";
-import { execa } from "execa";
-import semver from "semver";
-import type { ProviderConfig, StepResult } from "./types.js";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import type { SystemCheckResponse, ToolCheck } from "./types";
 
-const MIN_NODE = "22.14.0";
+const execFileAsync = promisify(execFile);
+const app = express();
+const PORT = 8787;
 
-export function detectPlatform(): StepResult {
-  return {
-    name: "platform",
-    status: "pass",
-    summary: `${os.platform()} ${os.arch()}`,
-    details: `shell=${process.env.SHELL ?? "unknown"}`,
-  };
-}
+app.use(cors());
+app.use(express.json());
 
-export function checkNodeVersion(): StepResult {
-  const version = process.versions.node;
-  const ok = semver.gte(version, MIN_NODE);
-  return {
-    name: "node",
-    status: ok ? "pass" : "fail",
-    summary: `node ${version}`,
-    details: `minimum supported version is ${MIN_NODE}`,
-    fix: ok ? undefined : "Install Node 24 or Node 22.14+ and reopen your terminal.",
-  };
-}
-
-export async function checkGitInstalled(): Promise<StepResult> {
+async function checkCommand(
+  name: string,
+  command: string,
+  args: string[] = ["--version"]
+): Promise<ToolCheck> {
   try {
-    const { stdout } = await execa("git", ["--version"]);
-    return { name: "git", status: "pass", summary: stdout };
+    const { stdout, stderr } = await execFileAsync(command, args);
+    const output = (stdout || stderr || "").trim().split("\n")[0];
+    return {
+      name,
+      ok: true,
+      version: output || "installed"
+    };
   } catch (error) {
     return {
-      name: "git",
-      status: "fail",
-      summary: "git not found",
-      fix: "Install Git and rerun the doctor flow.",
-      details: String(error),
+      name,
+      ok: false,
+      details:
+        error instanceof Error ? error.message : `Unable to execute ${command}`
     };
   }
 }
 
-export async function detectOpenClaw(): Promise<StepResult> {
-  try {
-    const { stdout } = await execa("openclaw", ["--version"]);
-    return {
-      name: "openclaw",
-      status: "pass",
-      summary: stdout.trim() || "openclaw detected",
-    };
-  } catch {
-    return {
-      name: "openclaw",
-      status: "warn",
-      summary: "openclaw not found in PATH",
-      fix: "Run the official installer, then restart your terminal and rerun doctor.",
-    };
-  }
-}
-
-export function recommendedInstallCommand(): StepResult {
-  const platform = os.platform();
-
+function getRecommendedInstallCommand(platform: NodeJS.Platform): string {
   if (platform === "win32") {
-    return {
-      name: "installer",
-      status: "warn",
-      summary: "recommended Windows command prepared",
-      details: "iwr -useb https://openclaw.ai/install.ps1 | iex",
-    };
+    return "iwr -useb https://openclaw.ai/install.ps1 | iex";
+  }
+
+  return "curl -fsSL https://openclaw.ai/install.sh | bash";
+}
+
+async function buildSystemCheck(): Promise<SystemCheckResponse> {
+  const platform = os.platform();
+  const [node, git, openclaw] = await Promise.all([
+    checkCommand("Node.js", "node", ["-v"]),
+    checkCommand("Git", "git", ["--version"]),
+    checkCommand("OpenClaw", "openclaw", ["--version"])
+  ]);
+
+  const recommendedNextSteps: string[] = [];
+
+  if (!node.ok) recommendedNextSteps.push("Install Node.js 24 or later.");
+  if (!git.ok) recommendedNextSteps.push("Install Git.");
+  if (!openclaw.ok) {
+    recommendedNextSteps.push("Install OpenClaw using the recommended installer.");
+  } else {
+    recommendedNextSteps.push("Run: openclaw status");
+    recommendedNextSteps.push("Run: openclaw gateway status");
+    recommendedNextSteps.push("Run: openclaw doctor");
   }
 
   return {
-    name: "installer",
-    status: "warn",
-    summary: "recommended macOS/Linux command prepared",
-    details: "curl -fsSL https://openclaw.ai/install.sh | bash",
+    ok: true,
+    os: platform,
+    arch: os.arch(),
+    shell: process.env.SHELL || process.env.ComSpec || "unknown",
+    node,
+    git,
+    openclaw,
+    recommendedInstallCommand: getRecommendedInstallCommand(platform),
+    recommendedNextSteps
   };
 }
 
-export function validateProviderConfig(input: ProviderConfig): StepResult {
-  const missing: string[] = [];
-  if (!input.provider) missing.push("provider");
-  if (!input.model) missing.push("model");
-  if (!input.apiKeyPresent) missing.push("apiKey");
+app.get("/api/health", (_req, res) => {
+  res.json({ ok: true, service: "clawbridge-core" });
+});
 
-  if (missing.length > 0) {
-    return {
-      name: "provider-config",
-      status: "fail",
-      summary: `missing required fields: ${missing.join(", ")}`,
-      fix: "Fill provider, model, and API key fields before launch.",
-    };
+app.get("/api/system-check", async (_req, res) => {
+  try {
+    const result = await buildSystemCheck();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      message:
+        error instanceof Error ? error.message : "Unknown system check error"
+    });
   }
+});
 
-  return {
-    name: "provider-config",
-    status: "pass",
-    summary: `${input.provider} / ${input.model}`,
-    details: input.baseUrl ? `baseUrl=${input.baseUrl}` : undefined,
-  };
-}
-
-export async function launchDryRun(): Promise<StepResult> {
-  return {
-    name: "launch-dry-run",
-    status: "warn",
-    summary: "Dry-run only in starter pack",
-    details: "In a real build, wire this action to a reviewed OpenClaw launch command.",
-  };
-}
+app.listen(PORT, () => {
+  console.log(`ClawBridge core API listening on http://localhost:${PORT}`);
+});
