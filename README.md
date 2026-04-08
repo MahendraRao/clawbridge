@@ -1,145 +1,256 @@
 # ClawBridge
 
-ClawBridge is a GitHub-hosted **AI wrapper for OpenClaw** that makes installation, provider setup, verification, and first-run onboarding easier for non-coders.
+ClawBridge is a **GitHub-hosted AI wrapper for OpenClaw** that simplifies installation, verification, provider setup, and first-run onboarding for beginners and non-coders.
 
-It is **not** a replacement for OpenClaw. It wraps the official install flow with a safer, more guided experience.
+It wraps the official OpenClaw installation flow with a **guided local UI + API verification experience**.
 
-## Why this exists
+---
 
-OpenClaw is powerful, but beginners often get stuck on:
+## ✨ Why this exists
 
-- Node and Git prerequisites
-- shell and PATH issues
-- provider/API key setup
-- launch verification
-- updates and troubleshooting
+OpenClaw is powerful, but many users still struggle with:
 
-ClawBridge turns that into a guided setup wizard.
+- Node.js and Git prerequisites
+- shell / PATH issues
+- verifying whether OpenClaw is installed
+- provider and API key setup
+- doctor / health-check flows
+- first-run troubleshooting
+- terminal fear for non-coders
 
-## Goals
+ClawBridge solves this by acting as a **local onboarding assistant and installation wrapper**.
 
-- Make OpenClaw easier to install on macOS, Linux, and Windows
-- Keep the workflow close to official OpenClaw docs
-- Add a simple “doctor” mode for fast troubleshooting
-- Make provider configuration clearer for beginners
-- Create a project that can be shared on GitHub and LinkedIn as a strong open-source portfolio piece
+---
 
-## Planned product shape
+## 🚀 What works today (Current MVP)
 
-### Phase 1 — MVP
-- System checks
-- Official installer wrapper
-- API provider setup wizard
-- Verification checks
-- One-click launch
-- Logs and error guidance
+### ✅ Working now
+- React + Vite frontend UI
+- local Express backend API
+- machine system checks
+- Node.js version detection
+- Git version detection
+- OpenClaw installation detection
+- recommended install command generation
+- OS / architecture / shell detection
+- guided next steps for installation
 
-### Phase 2 — Better security and UX
-- Secret storage integration
-- Guided updates
-- Export debug bundle
-- Rollback and uninstall helpers
+### 🔄 In progress
+- provider setup wizard
+- doctor command preview
+- install button
+- OpenClaw status checks
+- better error diagnostics
 
-### Phase 3 — AI-assisted setup
-- Natural language setup requests like:
-  - “Install OpenClaw on my Mac with OpenAI”
-  - “Use local install, no admin access”
-  - “Fix my PATH issue”
+### 🛣️ Planned
+- full Electron desktop packaging
+- secure secrets storage
+- update and uninstall flow
+- provider testing
+- debug bundle export
+- AI-assisted setup prompts
 
-## Repo structure
+---
+
+## 🧠 Why this is useful in the 2026 AI era
+
+The real friction in AI tools is rarely the model.
+
+The hardest parts are:
+- local environment setup
+- PATH problems
+- provider confusion
+- shell errors
+- onboarding friction
+- verification steps
+
+ClawBridge reduces this friction and makes OpenClaw easier to adopt for **developers, DevOps engineers, and non-coders**.
+
+---
+
+## 🏗️ Architecture
 
 ```text
+Frontend (React + Vite)
+        ↓
+Local API (Express + TypeScript)
+        ↓
+Machine inspection
+        ↓
+Node / Git / OpenClaw checks
+        ↓
+Recommended install flow
+        ↓
+Next-step guidance
+
+```
+---
+
+
+## 📂 Project structure
+
 clawbridge/
 ├── apps/
-│   └── desktop/            # Electron UI shell
+│   └── desktop/              # React + Vite frontend
 ├── packages/
-│   └── core/               # installer, checks, launcher logic
-├── docs/                   # architecture and troubleshooting notes
-├── scripts/                # wrapper shell scripts
-├── templates/              # env/config templates
+│   └── core/                 # Local API + system checks
+├── docs/                     # Architecture and troubleshooting
+├── scripts/                  # Install helper scripts
+├── templates/                # Provider/env templates
+├── .nvmrc                    # Node 24 pin
 ├── package.json
 └── pnpm-workspace.yaml
-```
 
-## Quick start
+## ⚙️ Local development setup
 
-### 1) Install prerequisites
-- Node.js 24 recommended
+Prerequisites
+- Node.js 24
 - pnpm 10+
 - Git
+- macOS / Linux / Windows
 
-### 2) Clone the repo
-```bash
-git clone https://github.com/<your-username>/clawbridge.git
-cd clawbridge
-```
+## Clone the repo
+- git clone https://github.com/MahendraRao/clawbridge.git
+- cd clawbridge
 
-### 3) Install dependencies
-```bash
-pnpm install
-```
 
-### 4) Run the desktop app
-```bash
-pnpm dev
-```
+Use the correct Node version
+- nvm use
 
-### 5) Run the demo doctor flow
-```bash
-pnpm doctor
-```
+If Node 24 is not installed:
 
-## What this wrapper does
+- nvm install 24
+- nvm use 24
 
-ClawBridge intentionally uses the **official OpenClaw install flow** where possible, then adds:
+Install dependencies
+- pnpm install
 
-- environment checks
-- command safety wrappers
-- plain-English error messages
-- provider configuration templates
-- launch verification
+Start the project
+- pnpm dev
 
-## Dummy example workflow
 
-User says:
+---
 
-> I am on macOS. I want OpenClaw with OpenAI, and I do not want to fight with terminal setup.
+## This starts:
 
-ClawBridge should:
+* frontend → http://localhost:5173
 
-1. detect macOS
-2. verify Node and Git
-3. run the official OpenClaw installer
-4. verify the `openclaw` command is available
-5. collect provider details
-6. validate the config
-7. launch OpenClaw
-8. show success or actionable next steps
+* backend API → http://localhost:8787
 
-## Security notes
 
-- Do not commit `.env` files
-- Do not log raw API keys
-- Use OS-native secrets storage in production
-- Review every shell command before making it fully automated
-- Consider a hardened mode later using sandboxed runtimes
 
-## Suggested GitHub publishing steps
+## 🧪 Current MVP flow
+1. open ClawBridge UI
+2. click Run system check
+3. detect:
 
-1. Create a new GitHub repository named `clawbridge`
-2. Push this starter code
-3. Add screenshots/GIFs to the README
-4. Tag your first release as `v0.1.0`
-5. Share a short demo video on LinkedIn
+     - OS
+     - architecture
+     - shell
+     - Node.js
+     - Git
+     - OpenClaw
 
-## Recommended next build steps
+4. generate install command
+5. guide user with next steps
 
-1. wire the Electron buttons to the core package
-2. add Windows PowerShell support
-3. implement secure key storage
-4. add real log streaming
-5. package binaries for macOS, Linux, and Windows
+## 💡 Example output
+- OS: darwin
+- Architecture: arm64
+- Shell: /bin/zsh
+- Node.js: Installed (v24.1.0)
+- Git: Installed (git version 2.53.0)
+- OpenClaw: Missing
 
-## License
+## Recommended command:
+- curl -fsSL https://openclaw.ai/install.sh | bash
 
-MIT
+## 📸 Screenshots
+
+
+Recommended screenshots:
+
+* homepage before system check
+
+![Homepage](<Screenshot 2026-04-08 at 12.50.56 PM.png>)
+
+* machine summary after check
+
+![System Check](<Screenshot 2026-04-08 at 12.51.17 PM.png>)
+
+* OpenClaw missing state
+
+![OpenClaw State](<Screenshot 2026-04-08 at 1.53.50 PM.png>)
+
+
+---
+
+
+## 🛠️ Roadmap
+
+Phase 1 — MVP
+ - frontend scaffold
+ - backend local API
+ - system checks
+ - Node/Git/OpenClaw detection
+ - install command recommendation
+
+Phase 2 — Guided onboarding
+- provider setup wizard
+- install button
+- doctor command preview
+- richer diagnostics
+- improved troubleshooting UX
+
+Phase 3 — Desktop wrapper
+- Electron packaging
+- secrets storage
+- update flow
+- uninstall flow
+- first-run AI setup assistant
+
+---
+
+## 🔐 Security notes
+- never commit .env
+- never log raw API keys
+- prefer OS-native secret stores
+- review shell execution carefully
+- avoid blind auto-run flows until hardened mode is added
+
+## 🧩 Troubleshooting
+* -> pnpm: command not found
+
+# Run:
+
+* nvm use 24
+* npm install -g pnpm
+
+## OpenClaw shows missing
+
+* Use:
+
+  | curl -fsSL https://openclaw.ai/install.sh | bash 
+
+## Then rerun the system check.
+
+# PATH issues
+
+- Verify:
+
+    * which openclaw
+    * echo $PATH
+
+
+# 🤝 Contributing
+
+Contributions are welcome.
+
+Good areas to contribute:
+
+* provider integrations
+* Windows support
+* Electron packaging
+* improved diagnostics
+* secure credential storage
+* UI/UX improvements
