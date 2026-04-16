@@ -12,3 +12,9 @@ coverage
 packages/core/.env.clawbridge
 .env.clawbridge
 packages/core/.env.clawbridge
+
+# ClawBridge generated secrets
+.env.clawbridge
+packages/core/.env.clawbridge
+generated/*.env
+generated/.env.clawbridge
