@@ -10,3 +10,5 @@ out
 coverage
 .env.clawbridge
 packages/core/.env.clawbridge
+.env.clawbridge
+packages/core/.env.clawbridge
