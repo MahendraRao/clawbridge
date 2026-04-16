@@ -152,8 +152,11 @@ app.post("/api/save-config", async (req, res) => {
   try {
     const { config } = req.body;
 
-    const outputPath = path.join(process.cwd(), ".env.clawbridge");
-    await fs.writeFile(outputPath, config, "utf8");
+  const generatedDir = path.join(process.cwd(), "..", "..", "generated");
+  await fs.mkdir(generatedDir, { recursive: true });
+
+  const outputPath = path.join(generatedDir, ".env.clawbridge");
+  await fs.writeFile(outputPath, config, "utf8");
 
     res.json({
       ok: true,
@@ -182,10 +185,13 @@ app.post("/api/run-command", async (req, res) => {
   const { command } = req.body;
 
   const allowed: Record<string, string[]> = {
-    version: ["openclaw", "--version"],
-    status: ["openclaw", "status"],
-    doctor: ["openclaw", "doctor"]
-  };
+  version: ["openclaw", "--version"],
+  status: ["openclaw", "status"],
+  doctor: ["openclaw", "doctor"],
+  gateway: ["openclaw", "gateway", "status"],
+  channels: ["openclaw", "channels", "status", "--probe"],
+  "deep-status": ["openclaw", "status", "--deep"]
+};
 
   const cmd = allowed[command];
 

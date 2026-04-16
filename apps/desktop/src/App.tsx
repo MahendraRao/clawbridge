@@ -174,7 +174,7 @@ export default function App() {
   }
 
   async function runDoctorCommand(
-    command: "version" | "status" | "doctor"
+    command: "version" | "status" | "doctor" | "gateway" | "channels" | "deep-status"
   ) {
     const res = await fetch("/api/run-command", {
       method: "POST",
@@ -396,6 +396,27 @@ export default function App() {
             onClick={() => runDoctorCommand("status")}
           >
             Status
+          </button>
+
+          <button
+            className="secondary-btn"
+            onClick={() => runDoctorCommand("gateway")}
+          >
+            Gateway
+          </button>
+
+          <button
+            className="secondary-btn"
+            onClick={() => runDoctorCommand("channels")}
+          >
+            Channels
+          </button>
+
+          <button
+            className="secondary-btn"
+            onClick={() => runDoctorCommand("deep-status")}
+          >
+            Deep Status
           </button>
 
           <button
