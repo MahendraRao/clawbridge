@@ -320,6 +320,7 @@ Generated provider configs are stored locally inside:
 
 ```bash
 generated/.env.clawbridge
+```
 
 These files are gitignored by default and are not committed to the repository.
 
