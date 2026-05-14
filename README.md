@@ -314,6 +314,8 @@ Recommended screenshots:
 - review shell execution carefully
 - avoid blind auto-run flows until hardened mode is added
 
+---
+
 ## 🔒 Local generated configs
 
 Generated provider configs are stored locally inside:
