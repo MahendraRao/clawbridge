@@ -37,30 +37,62 @@ ClawBridge solves this by acting as a **local onboarding assistant and installat
 ## 🚀 What works today (Current MVP)
 
 ### ✅ Working now
+
+#### Core platform
 - React + Vite frontend UI
-- local Express backend API
+- local Express + TypeScript backend API
 - machine system checks
+- OS / architecture / shell detection
 - Node.js version detection
 - Git version detection
 - OpenClaw installation detection
 - recommended install command generation
-- OS / architecture / shell detection
-- guided next steps for installation
+- guided next-step onboarding
+
+#### Provider orchestration
+- OpenAI provider support
+- Anthropic provider support
+- Ollama provider support
+- local/custom provider support
+- latest recommended model selection
+- custom model input support
+- provider-specific env generation
+
+#### Verification + diagnostics
+- OpenClaw version verification
+- OpenClaw status checks
+- gateway status verification
+- channels status probing
+- deep status verification
+- OpenClaw doctor execution
+
+#### Secure local config handling
+- local `.env.clawbridge` generation
+- gitignored local secret storage
+- local-only generated provider configs
+
+---
 
 ### 🔄 In progress
-- provider setup wizard
-- doctor command preview
-- install button
-- OpenClaw status checks
-- better error diagnostics
+- first-run launch orchestration
+- launch test agent flow
+- provider reachability testing
+- structured activity logs
+- richer diagnostics and troubleshooting UX
+- componentized frontend architecture
+- premium control-center UI
+
+---
 
 ### 🛣️ Planned
-- full Electron desktop packaging
+- Electron desktop packaging
+- provider failover and routing
+- agent observability
+- OpenTelemetry integration
+- Docker + Kubernetes support
 - secure secrets storage
-- update and uninstall flow
-- provider testing
-- debug bundle export
-- AI-assisted setup prompts
+- plugin architecture
+- AI-assisted operational workflows
 
 ---
 
@@ -76,7 +108,7 @@ The hardest parts are:
 - onboarding friction
 - verification steps
 
-ClawBridge reduces this friction and makes OpenClaw easier to adopt for **developers, DevOps engineers, and non-coders**.
+ClawBridge is evolving toward an operational UX layer for AI agents — focused on onboarding, diagnostics, provider orchestration, reliability, and developer experience for modern AI systems.
 
 ---
 
@@ -158,27 +190,49 @@ Start the project
 
 
 ## 🧪 Current MVP flow
+
 1. open ClawBridge UI
 2. click Run system check
 3. detect:
+   - OS
+   - architecture
+   - shell
+   - Node.js
+   - Git
+   - OpenClaw
 
-     - OS
-     - architecture
-     - shell
-     - Node.js
-     - Git
-     - OpenClaw
+4. verify OpenClaw installation state
+5. generate provider-specific configuration
+6. select:
+   - OpenAI
+   - Anthropic
+   - Ollama
+   - local/custom models
 
-4. generate install command
-5. guide user with next steps
+7. generate local `.env.clawbridge`
+8. run verification commands:
+   - Version
+   - Status
+   - Gateway
+   - Channels
+   - Deep Status
+   - Doctor
+
+9. guide the user toward next operational steps
 
 ## 💡 Example output
+
 - OS: darwin
 - Architecture: arm64
 - Shell: /bin/zsh
 - Node.js: Installed (v24.1.0)
-- Git: Installed (git version 2.53.0)
-- OpenClaw: Missing
+- Git: Installed (git version 2.x)
+- OpenClaw: Installed (2026.x.x)
+
+## Verification examples
+- gateway status: reachable
+- channels probe: successful
+- doctor: completed
 
 ## Recommended command:
 - curl -fsSL https://openclaw.ai/install.sh | bash
@@ -208,26 +262,48 @@ Recommended screenshots:
 
 ## 🛠️ Roadmap
 
-Phase 1 — MVP
- - frontend scaffold
- - backend local API
- - system checks
- - Node/Git/OpenClaw detection
- - install command recommendation
+### Phase 1 — Install + Verify
+- frontend scaffold
+- backend local API
+- system checks
+- Node/Git/OpenClaw detection
+- install command recommendation
 
-Phase 2 — Guided onboarding
-- provider setup wizard
-- install button
-- doctor command preview
+### Phase 2 — Provider orchestration
+- OpenAI support
+- Anthropic support
+- Ollama support
+- local/custom models
+- provider-specific env generation
+- secure local config storage
+
+### Phase 3 — Operational UX
+- launch orchestration
+- provider reachability testing
+- structured logs
+- activity history
 - richer diagnostics
-- improved troubleshooting UX
+- troubleshooting workflows
 
-Phase 3 — web-assisted wrapper
-- Electron packaging
-- secrets storage
-- update flow
-- uninstall flow
-- first-run AI setup assistant
+### Phase 4 — Agent operations
+- session visibility
+- execution tracing
+- provider health metrics
+- token usage visibility
+- agent observability
+
+### Phase 5 — DevOps + Infrastructure
+- Docker integration
+- Kubernetes integration
+- OpenTelemetry support
+- gateway health probes
+- deployment diagnostics
+
+### Phase 6 — Platform evolution
+- plugin architecture
+- packaged desktop app
+- SDK extraction
+- AI-assisted operational workflows
 
 ---
 
@@ -237,6 +313,18 @@ Phase 3 — web-assisted wrapper
 - prefer OS-native secret stores
 - review shell execution carefully
 - avoid blind auto-run flows until hardened mode is added
+
+## 🔒 Local generated configs
+
+Generated provider configs are stored locally inside:
+
+```bash
+generated/.env.clawbridge
+
+These files are gitignored by default and are not committed to the repository.
+
+Never commit real API keys or credentials.
+Rotate exposed credentials immediately if accidentally shared.
 
 ## 🧩 Troubleshooting
 Issue as  -> pnpm: command not found
