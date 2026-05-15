@@ -259,6 +259,14 @@ Recommended screenshots:
 
 ![OpenClaw State](./docs/screenshots/openclaw-state.png)
 
+* OpenClaw Installed state
+
+![OpenClaw State](./docs/screenshots/openclaw-Installed.png)
+
+* Test Agent
+
+![OpenClaw State](./docs/screenshots/TestAgent.png)
+
 
 
 ---
