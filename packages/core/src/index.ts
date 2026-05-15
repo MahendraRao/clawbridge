@@ -16,11 +16,11 @@ app.use(express.json());
 const MODEL_CATALOG = {
   openai: {
     label: "OpenAI",
-    models: ["gpt-5.4", "gpt-5.4-mini", "gpt-5.4-nano", "custom"]
+    models: ["gpt-5.5", "gpt-5.4", "gpt-5.4-mini", "gpt-5.4-nano", "custom"]
   },
   anthropic: {
     label: "Anthropic",
-    models: ["claude-opus-4-6", "claude-sonnet-4-6", "custom"]
+    models: ["claude-opus-4.7", "claude-opus-4.6", "claude-sonnet-4.6", "claude-haiku-4.5" ,"custom"]
   },
   ollama: {
     label: "Ollama",
@@ -180,33 +180,74 @@ app.get("/api/doctor-preview", (_req, res) => {
     ]
   });
 });
+async function checkGeneratedConfig() {
+  const configPath = path.join(process.cwd(), "..", "..", "generated", ".env.clawbridge");
 
-app.post("/api/run-command", async (req, res) => {
-  const { command } = req.body;
+  try {
+    const config = await fs.readFile(configPath, "utf8");
+    const providerMatch = config.match(/^PROVIDER=(.+)$/m);
 
-  const allowed: Record<string, string[]> = {
-  version: ["openclaw", "--version"],
-  status: ["openclaw", "status"],
-  doctor: ["openclaw", "doctor"],
-  gateway: ["openclaw", "gateway", "status"],
-  channels: ["openclaw", "channels", "status", "--probe"],
-  "deep-status": ["openclaw", "status", "--deep"]
-};
-
-  const cmd = allowed[command];
-
-  if (!cmd) {
-    return res.json({
+    return {
+      ok: true,
+      path: configPath,
+      provider: providerMatch?.[1]?.trim() || "unknown"
+    };
+  } catch (error) {
+    return {
       ok: false,
-      output: "Command not allowed"
-    });
+      path: configPath,
+      provider: "unknown",
+      error: error instanceof Error ? error.message : "Unable to read generated config"
+    };
   }
+}
 
-  const result = await runCommand(cmd[0], cmd.slice(1));
-  res.json(result);
+app.post("/api/launch-test-agent", async (_req, res) => {
+  const version = await runCommand("openclaw", ["--version"]);
+  const gateway = await runCommand("openclaw", ["gateway", "status"]);
+  const config = await checkGeneratedConfig();
+  const status = await runCommand("openclaw", ["status"]);
+
+  const checks = [
+    {
+      name: "OpenClaw installed",
+      ok: version.ok,
+      detail: version.output
+    },
+    {
+      name: "Gateway reachable",
+      ok: gateway.ok,
+      detail: gateway.output
+    },
+    {
+      name: "Provider config found",
+      ok: config.ok,
+      detail: config.ok
+        ? `Found ${config.path}`
+        : `Missing config at ${config.path}`
+    },
+    {
+      name: "Provider detected",
+      ok: config.ok && config.provider !== "unknown",
+      detail: config.provider
+    },
+    {
+      name: "OpenClaw status command",
+      ok: status.ok,
+      detail: status.output
+    }
+  ];
+
+  res.json({
+    ok: checks.every((check) => check.ok),
+    provider: config.provider,
+    checks
+  });
 });
+
 
 app.listen(PORT, () => {
   console.log(`ClawBridge core API listening on http://localhost:${PORT}`);
 });
+
 
