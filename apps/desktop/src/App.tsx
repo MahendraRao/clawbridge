@@ -33,6 +33,19 @@ type ProviderConfigResponse = {
   config: string;
 };
 
+type LaunchCheck = {
+  name: string;
+  ok: boolean;
+  detail: string;
+};
+
+type LaunchResult = {
+  ok: boolean;
+  provider: string;
+  checks?: LaunchCheck[];
+  error?: string;
+};
+
 function StatusBadge({ ok }: { ok: boolean }) {
   return (
     <span className={ok ? "badge-ok" : "badge-bad"}>
@@ -41,32 +54,17 @@ function StatusBadge({ ok }: { ok: boolean }) {
   );
 }
 
-function CheckCard({
-  title,
-  check
-}: {
-  title: string;
-  check: ToolCheck;
-}) {
+function CheckCard({ title, check }: { title: string; check: ToolCheck }) {
   return (
     <div className="panel">
       <div className="panel-header">
         <h3>{title}</h3>
         <StatusBadge ok={check.ok} />
       </div>
-
-      <p>
-        <strong>Command:</strong> {check.name}
-      </p>
-
-      <p>
-        <strong>Version:</strong> {check.version || "Not detected"}
-      </p>
-
+      <p><strong>Command:</strong> {check.name}</p>
+      <p><strong>Version:</strong> {check.version || "Not detected"}</p>
       {!check.ok && check.details ? (
-        <p className="error-text">
-          <strong>Details:</strong> {check.details}
-        </p>
+        <p className="error-text"><strong>Details:</strong> {check.details}</p>
       ) : null}
     </div>
   );
@@ -81,10 +79,12 @@ export default function App() {
   const [commandOutput, setCommandOutput] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [launchingAgent, setLaunchingAgent] = useState(false);
+  const [launchResult, setLaunchResult] = useState<LaunchResult | null>(null);
 
   const [provider, setProvider] = useState("openai");
   const [apiKey, setApiKey] = useState("");
-  const [selectedModel, setSelectedModel] = useState("gpt-5.4");
+  const [selectedModel, setSelectedModel] = useState("gpt-5.5");
   const [customModel, setCustomModel] = useState("");
   const [ollamaHost, setOllamaHost] = useState("http://localhost:11434");
 
@@ -95,8 +95,7 @@ export default function App() {
       setModelCatalog(data);
 
       const defaultOpenAI =
-        data.openai?.models?.find((m) => m !== "custom") || "custom";
-
+        data.openai?.models?.find((model) => model !== "custom") || "custom";
       setSelectedModel(defaultOpenAI);
     }
 
@@ -109,7 +108,7 @@ export default function App() {
 
   function getDefaultModel(nextProvider: string) {
     const models = modelCatalog[nextProvider]?.models || ["custom"];
-    return models.find((m) => m !== "custom") || "custom";
+    return models.find((model) => model !== "custom") || "custom";
   }
 
   function handleProviderChange(nextProvider: string) {
@@ -124,11 +123,13 @@ export default function App() {
   async function runSystemCheck() {
     setLoading(true);
 
-    const res = await fetch("/api/system-check");
-    const data = await res.json();
-
-    setResult(data);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/system-check");
+      const data = await res.json();
+      setResult(data);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function loadDoctorPreview() {
@@ -188,13 +189,35 @@ export default function App() {
     setCommandOutput(data.output);
   }
 
+  async function launchTestAgent() {
+    setLaunchingAgent(true);
+
+    try {
+      const res = await fetch("/api/launch-test-agent", {
+        method: "POST"
+      });
+
+      const data: LaunchResult = await res.json();
+      setLaunchResult(data);
+    } catch (error) {
+      setLaunchResult({
+        ok: false,
+        provider: "unknown",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to launch test agent"
+      });
+    } finally {
+      setLaunchingAgent(false);
+    }
+  }
+
   async function copyText(text: string) {
     await navigator.clipboard.writeText(text);
   }
 
-  const showApiKey =
-    provider === "openai" || provider === "anthropic";
-
+  const showApiKey = provider === "openai" || provider === "anthropic";
   const showOllamaHost = provider === "ollama";
   const showCustomModel = selectedModel === "custom";
 
@@ -202,24 +225,17 @@ export default function App() {
     <div className="app-shell">
       <section className="hero panel">
         <div className="eyebrow">CLAWBRIDGE</div>
-        <h1>Beginner-friendly OpenClaw wrapper</h1>
+        <h1>AI Agent Operations Control Plane</h1>
         <p className="hero-copy">
-          Guided onboarding, provider configuration, and first-run setup.
+          Configure providers, verify OpenClaw, run diagnostics, and prepare local AI agents for safe first launch.
         </p>
 
         <div className="hero-actions">
-          <button
-            className="primary-btn"
-            onClick={runSystemCheck}
-            disabled={loading}
-          >
+          <button className="primary-btn" onClick={runSystemCheck} disabled={loading}>
             {loading ? "Checking..." : "Run system check"}
           </button>
 
-          <button
-            className="secondary-btn"
-            onClick={loadDoctorPreview}
-          >
+          <button className="secondary-btn" onClick={loadDoctorPreview}>
             Doctor preview
           </button>
         </div>
@@ -237,15 +253,10 @@ export default function App() {
 
             <div className="panel">
               <h2>Recommended install command</h2>
-              <pre className="code-block">
-                {result.recommendedInstallCommand}
-              </pre>
-
+              <pre className="code-block">{result.recommendedInstallCommand}</pre>
               <button
                 className="secondary-btn"
-                onClick={() =>
-                  copyText(result.recommendedInstallCommand)
-                }
+                onClick={() => copyText(result.recommendedInstallCommand)}
               >
                 Copy install command
               </button>
@@ -273,26 +284,20 @@ export default function App() {
         <section className="panel">
           <h2>Doctor preview</h2>
           {doctorCommands.map((cmd) => (
-            <pre key={cmd} className="code-block">
-              {cmd}
-            </pre>
+            <pre key={cmd} className="code-block">{cmd}</pre>
           ))}
         </section>
       )}
 
       <section className="panel">
         <h2>Provider setup (current recommended models)</h2>
-
         <p className="muted-text">
-          Hosted providers use curated current model lists.
-          Ollama and local providers support any custom model.
+          Hosted providers use curated current model lists. Ollama and local providers
+          support any custom model.
         </p>
 
         <div className="form-grid">
-          <select
-            value={provider}
-            onChange={(e) => handleProviderChange(e.target.value)}
-          >
+          <select value={provider} onChange={(event) => handleProviderChange(event.target.value)}>
             <option value="openai">OpenAI</option>
             <option value="anthropic">Anthropic</option>
             <option value="ollama">Ollama</option>
@@ -308,7 +313,7 @@ export default function App() {
                   : "Enter Anthropic API key"
               }
               value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
+              onChange={(event) => setApiKey(event.target.value)}
             />
           )}
 
@@ -317,13 +322,13 @@ export default function App() {
               type="text"
               placeholder="Ollama host"
               value={ollamaHost}
-              onChange={(e) => setOllamaHost(e.target.value)}
+              onChange={(event) => setOllamaHost(event.target.value)}
             />
           )}
 
           <select
             value={selectedModel}
-            onChange={(e) => setSelectedModel(e.target.value)}
+            onChange={(event) => setSelectedModel(event.target.value)}
           >
             {providerModels.map((model) => (
               <option key={model} value={model}>
@@ -337,21 +342,16 @@ export default function App() {
               type="text"
               placeholder="Enter custom model name"
               value={customModel}
-              onChange={(e) => setCustomModel(e.target.value)}
+              onChange={(event) => setCustomModel(event.target.value)}
             />
           )}
 
-          <button
-            className="primary-btn"
-            onClick={generateProviderConfig}
-          >
+          <button className="primary-btn" onClick={generateProviderConfig}>
             Generate config
           </button>
         </div>
 
-        {configMessage && (
-          <p className="muted-text">{configMessage}</p>
-        )}
+        {configMessage ? <p className="muted-text">{configMessage}</p> : null}
 
         {providerConfig && (
           <>
@@ -365,17 +365,12 @@ export default function App() {
                 Copy provider config
               </button>
 
-              <button
-                className="primary-btn"
-                onClick={saveConfigToFile}
-              >
+              <button className="primary-btn" onClick={saveConfigToFile}>
                 Save as .env
               </button>
             </div>
 
-            {saveMessage && (
-              <p className="muted-text">{saveMessage}</p>
-            )}
+            {saveMessage && <p className="muted-text">{saveMessage}</p>}
           </>
         )}
       </section>
@@ -384,51 +379,70 @@ export default function App() {
         <h2>Run verification commands</h2>
 
         <div className="hero-actions">
-          <button
-            className="secondary-btn"
-            onClick={() => runDoctorCommand("version")}
-          >
+          <button className="secondary-btn" onClick={() => runDoctorCommand("version")}>
             Version
           </button>
 
-          <button
-            className="secondary-btn"
-            onClick={() => runDoctorCommand("status")}
-          >
+          <button className="secondary-btn" onClick={() => runDoctorCommand("status")}>
             Status
           </button>
 
-          <button
-            className="secondary-btn"
-            onClick={() => runDoctorCommand("gateway")}
-          >
+          <button className="secondary-btn" onClick={() => runDoctorCommand("gateway")}>
             Gateway
           </button>
 
-          <button
-            className="secondary-btn"
-            onClick={() => runDoctorCommand("channels")}
-          >
+          <button className="secondary-btn" onClick={() => runDoctorCommand("channels")}>
             Channels
           </button>
 
-          <button
-            className="secondary-btn"
-            onClick={() => runDoctorCommand("deep-status")}
-          >
+          <button className="secondary-btn" onClick={() => runDoctorCommand("deep-status")}>
             Deep Status
           </button>
 
-          <button
-            className="secondary-btn"
-            onClick={() => runDoctorCommand("doctor")}
-          >
+          <button className="secondary-btn" onClick={() => runDoctorCommand("doctor")}>
             Doctor
           </button>
         </div>
 
-        {commandOutput && (
-          <pre className="code-block">{commandOutput}</pre>
+        {commandOutput && <pre className="code-block">{commandOutput}</pre>}
+      </section>
+
+      <section className="panel">
+        <h2>Launch Test Agent</h2>
+        <p className="muted-text">
+          Runs a safe preflight workflow: OpenClaw version, gateway status,
+          generated provider config detection, provider detection, and OpenClaw status.
+        </p>
+
+        <button className="primary-btn" onClick={launchTestAgent} disabled={launchingAgent}>
+          {launchingAgent ? "Launching..." : "Launch Test Agent"}
+        </button>
+
+        {launchResult && (
+          <div style={{ marginTop: "1rem" }}>
+            <p className={launchResult.ok ? "muted-text" : "error-text"}>
+              <strong>Overall status:</strong>{" "}
+              {launchResult.ok ? "Success" : "Failed"}
+            </p>
+
+            <p className="muted-text">
+              <strong>Provider:</strong> {launchResult.provider || "unknown"}
+            </p>
+
+            {Array.isArray(launchResult.checks) &&
+              launchResult.checks.map((check) => (
+                <div key={check.name} className="panel" style={{ marginTop: "1rem" }}>
+                  <p>
+                    <strong>{check.ok ? "✅" : "❌"} {check.name}</strong>
+                  </p>
+                  <pre className="code-block">{check.detail}</pre>
+                </div>
+              ))}
+
+            {launchResult.error && (
+              <pre className="code-block">{launchResult.error}</pre>
+            )}
+          </div>
         )}
       </section>
     </div>
