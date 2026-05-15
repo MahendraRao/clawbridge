@@ -249,15 +249,15 @@ Recommended screenshots:
 
 * homepage before system check
 
-![Homepage](<./docs/screenshots/homepage.png>)
+![Homepage](./docs/screenshots/homepage.png)
 
 * machine summary after check
 
-![System Check](<./docs/screenshots/system-check.png>)
+![System Check](./docs/screenshots/system-check.png)
 
 * OpenClaw missing state
 
-![OpenClaw State](<./docs/screenshots/openclaw-state.png>)
+![OpenClaw State](./docs/screenshots/openclaw-state.png)
 
 ```
 
