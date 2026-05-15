@@ -134,11 +134,18 @@ app.get("/api/system-check", async (_req, res) => {
     openclaw,
     recommendedInstallCommand:
       "curl -fsSL https://openclaw.ai/install.sh | bash",
-    recommendedNextSteps: [
-      "Run installer",
-      "Refresh verification",
-      "Generate provider config",
-      "Run doctor"
+    recommendedNextSteps: openclaw.ok
+  ? [
+      "OpenClaw is installed.",
+      "Generate provider config.",
+      "Run gateway/channels verification.",
+      "Run doctor."
+    ]
+  : [
+      "Run installer.",
+      "Refresh verification.",
+      "Generate provider config.",
+      "Run doctor after installation."
     ]
   });
 });
@@ -245,6 +252,30 @@ app.post("/api/launch-test-agent", async (_req, res) => {
   });
 });
 
+app.post("/api/run-command", async (req, res) => {
+  const { command } = req.body;
+
+  const allowed: Record<string, string[]> = {
+    version: ["openclaw", "--version"],
+    status: ["openclaw", "status"],
+    doctor: ["openclaw", "doctor"],
+    gateway: ["openclaw", "gateway", "status"],
+    channels: ["openclaw", "channels", "status", "--probe"],
+    "deep-status": ["openclaw", "status", "--deep"]
+  };
+
+  const cmd = allowed[command];
+
+  if (!cmd) {
+    return res.status(400).json({
+      ok: false,
+      output: "Command not allowed"
+    });
+  }
+
+  const result = await runCommand(cmd[0], cmd.slice(1));
+  res.json(result);
+});
 
 app.listen(PORT, () => {
   console.log(`ClawBridge core API listening on http://localhost:${PORT}`);
