@@ -38,6 +38,9 @@ ClawBridge solves this by acting as a **local onboarding assistant and installat
 
 ### ✅ Working now
 
+- launch test agent preflight workflow
+
+
 #### Core platform
 - React + Vite frontend UI
 - local Express + TypeScript backend API
@@ -75,7 +78,6 @@ ClawBridge solves this by acting as a **local onboarding assistant and installat
 
 ### 🔄 In progress
 - first-run launch orchestration
-- launch test agent flow
 - provider reachability testing
 - structured activity logs
 - richer diagnostics and troubleshooting UX
@@ -133,17 +135,19 @@ Next-step guidance
 
 ## 📂 Project structure
 
+```text
 clawbridge/
 ├── apps/
 │   └── desktop/              # React + Vite frontend
 ├── packages/
 │   └── core/                 # Local API + system checks
-├── docs/                     # Architecture and troubleshooting
-├── scripts/                  # Install helper scripts
+├── docs/                     # Architecture, security, providers, roadmap
+├── scripts/                  # Install/helper scripts
 ├── templates/                # Provider/env templates
 ├── .nvmrc                    # Node 24 pin
 ├── package.json
 └── pnpm-workspace.yaml
+```
 
 
 ## ⚙️ Local development setup
