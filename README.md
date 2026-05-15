@@ -123,11 +123,11 @@ Local API (Express + TypeScript)
         ↓
 Machine inspection
         ↓
-Node / Git / OpenClaw checks
+OpenClaw verification
         ↓
-Recommended install flow
+Provider orchestration
         ↓
-Next-step guidance
+Operational diagnostics
 
 ```
 ---
@@ -241,7 +241,7 @@ Start the project
 ## Recommended command:
 - curl -fsSL https://openclaw.ai/install.sh | bash
 
-```md
+
 ## 📸 Screenshots
 
 
@@ -259,7 +259,7 @@ Recommended screenshots:
 
 ![OpenClaw State](./docs/screenshots/openclaw-state.png)
 
-```
+
 
 ---
 
