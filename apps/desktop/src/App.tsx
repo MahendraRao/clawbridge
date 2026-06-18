@@ -206,6 +206,7 @@ export default function App() {
 
   async function launchTestAgent() {
     setLaunchingAgent(true);
+    setLaunchResult(null);
 
     try {
       const res = await fetch("/api/launch-test-agent", {
