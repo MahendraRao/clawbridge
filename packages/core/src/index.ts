@@ -31,18 +31,29 @@ const MODEL_CATALOG = {
     models: ["custom"]
   }
 };
-
+function stripAnsi(input: string) {
+  return input.replace(
+    // eslint-disable-next-line no-control-regex
+    /[\u001b\u009b][[\]()#;?]*(?:(?:(?:[a-zA-Z\d]*(?:;[a-zA-Z\d]*)*)?\u0007)|(?:(?:\d{1,4}(?:;\d{0,4})*)?[\dA-PR-TZcf-nq-uy=><~]))/g,
+    ""
+  );
+}
 async function runCommand(command: string, args: string[]) {
   try {
     const { stdout, stderr } = await execFileAsync(command, args);
+    const rawOutput = (stdout || stderr || "").trim();
+
     return {
       ok: true,
-      output: (stdout || stderr || "").trim()
+      output: stripAnsi(rawOutput)
     };
   } catch (error) {
+    const rawOutput =
+      error instanceof Error ? error.message : "Unknown command error";
+
     return {
       ok: false,
-      output: error instanceof Error ? error.message : "Unknown command error"
+      output: stripAnsi(rawOutput)
     };
   }
 }
