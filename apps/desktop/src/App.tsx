@@ -77,6 +77,7 @@ export default function App() {
   const [providerConfig, setProviderConfig] = useState("");
   const [configMessage, setConfigMessage] = useState("");
   const [commandOutput, setCommandOutput] = useState("");
+  const [copyMessage, setCopyMessage] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [launchingAgent, setLaunchingAgent] = useState(false);
@@ -213,9 +214,14 @@ export default function App() {
     }
   }
 
-  async function copyText(text: string) {
-    await navigator.clipboard.writeText(text);
-  }
+  async function copyText(text: string, message = "Copied to clipboard.") {
+  await navigator.clipboard.writeText(text);
+  setCopyMessage(message);
+
+  window.setTimeout(() => {
+    setCopyMessage("");
+  }, 2000);
+}
 
   const showApiKey = provider === "openai" || provider === "anthropic";
   const showOllamaHost = provider === "ollama";
@@ -404,7 +410,20 @@ export default function App() {
           </button>
         </div>
 
-        {commandOutput && <pre className="code-block">{commandOutput}</pre>}
+        {commandOutput && (
+          <>
+            <div className="hero-actions" style={{ marginTop: "1rem" }}>
+              <button
+                className="secondary-btn"
+                onClick={() => copyText(commandOutput, "Verification output copied.")}
+              >
+                Copy output
+              </button>
+            </div>
+
+            <pre className="code-block">{commandOutput}</pre>
+          </>
+          )}
       </section>
 
       <section className="panel">
@@ -435,9 +454,17 @@ export default function App() {
                   <p>
                     <strong>{check.ok ? "✅" : "❌"} {check.name}</strong>
                   </p>
+
+                  <button
+                    className="secondary-btn"
+                    onClick={() => copyText(check.detail, `${check.name} output copied.`)}
+                  >
+                    Copy check output
+                  </button>
+
                   <pre className="code-block">{check.detail}</pre>
-                </div>
-              ))}
+              </div>
+            ))}
 
             {launchResult.error && (
               <pre className="code-block">{launchResult.error}</pre>
@@ -445,6 +472,8 @@ export default function App() {
           </div>
         )}
       </section>
+      
+      {copyMessage && <p className="muted-text">{copyMessage}</p>}
     </div>
   );
 }
