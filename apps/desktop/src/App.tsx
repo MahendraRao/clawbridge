@@ -80,6 +80,9 @@ export default function App() {
   const [copyMessage, setCopyMessage] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [runningCommand, setRunningCommand] = useState<
+    "version" | "status" | "doctor" | "gateway" | "channels" | "deep-status" | null
+  >(null);
   const [launchingAgent, setLaunchingAgent] = useState(false);
   const [launchResult, setLaunchResult] = useState<LaunchResult | null>(null);
 
@@ -178,16 +181,27 @@ export default function App() {
   async function runDoctorCommand(
     command: "version" | "status" | "doctor" | "gateway" | "channels" | "deep-status"
   ) {
-    const res = await fetch("/api/run-command", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ command })
-    });
+    setRunningCommand(command);
+    setCommandOutput("");
 
-    const data = await res.json();
-    setCommandOutput(data.output);
+    try {
+      const res = await fetch("/api/run-command", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ command })
+      });
+
+      const data = await res.json();
+      setCommandOutput(data.output || "Command completed with no output.");
+    } catch (error) {
+      setCommandOutput(
+        error instanceof Error ? error.message : "Failed to run verification command."
+      );
+    } finally {
+      setRunningCommand(null);
+    }
   }
 
   async function launchTestAgent() {
@@ -215,13 +229,20 @@ export default function App() {
   }
 
   async function copyText(text: string, message = "Copied to clipboard.") {
-  await navigator.clipboard.writeText(text);
-  setCopyMessage(message);
+    await navigator.clipboard.writeText(text);
+    setCopyMessage(message);
 
-  window.setTimeout(() => {
-    setCopyMessage("");
-  }, 2000);
-}
+    window.setTimeout(() => {
+      setCopyMessage("");
+    }, 2000);
+  }
+
+  function commandButtonLabel(
+    command: "version" | "status" | "doctor" | "gateway" | "channels" | "deep-status",
+    label: string
+  ) {
+    return runningCommand === command ? `Running ${label}...` : label;
+  }
 
   const showApiKey = provider === "openai" || provider === "anthropic";
   const showOllamaHost = provider === "ollama";
@@ -385,30 +406,60 @@ export default function App() {
         <h2>Run verification commands</h2>
 
         <div className="hero-actions">
-          <button className="secondary-btn" onClick={() => runDoctorCommand("version")}>
-            Version
+          <button
+            className="secondary-btn"
+            onClick={() => runDoctorCommand("version")}
+            disabled={runningCommand !== null}
+          >
+            {commandButtonLabel("version", "Version")}
           </button>
 
-          <button className="secondary-btn" onClick={() => runDoctorCommand("status")}>
-            Status
+          <button
+            className="secondary-btn"
+            onClick={() => runDoctorCommand("status")}
+            disabled={runningCommand !== null}
+          >
+            {commandButtonLabel("status", "Status")}
           </button>
 
-          <button className="secondary-btn" onClick={() => runDoctorCommand("gateway")}>
-            Gateway
+          <button
+            className="secondary-btn"
+            onClick={() => runDoctorCommand("gateway")}
+            disabled={runningCommand !== null}
+          >
+            {commandButtonLabel("gateway", "Gateway")}
           </button>
 
-          <button className="secondary-btn" onClick={() => runDoctorCommand("channels")}>
-            Channels
+          <button
+            className="secondary-btn"
+            onClick={() => runDoctorCommand("channels")}
+            disabled={runningCommand !== null}
+          >
+            {commandButtonLabel("channels", "Channels")}
           </button>
 
-          <button className="secondary-btn" onClick={() => runDoctorCommand("deep-status")}>
-            Deep Status
+          <button
+            className="secondary-btn"
+            onClick={() => runDoctorCommand("deep-status")}
+            disabled={runningCommand !== null}
+          >
+            {commandButtonLabel("deep-status", "Deep Status")}
           </button>
 
-          <button className="secondary-btn" onClick={() => runDoctorCommand("doctor")}>
-            Doctor
+          <button
+            className="secondary-btn"
+            onClick={() => runDoctorCommand("doctor")}
+            disabled={runningCommand !== null}
+          >
+            {commandButtonLabel("doctor", "Doctor")}
           </button>
         </div>
+
+        {runningCommand && (
+          <p className="muted-text" style={{ marginTop: "1rem" }}>
+            Running {runningCommand} check...
+          </p>
+        )}
 
         {commandOutput && (
           <>
@@ -434,8 +485,14 @@ export default function App() {
         </p>
 
         <button className="primary-btn" onClick={launchTestAgent} disabled={launchingAgent}>
-          {launchingAgent ? "Launching..." : "Launch Test Agent"}
+          {launchingAgent ? "Running launch preflight..." : "Launch Test Agent"}
         </button>
+
+        {launchingAgent && (
+          <p className="muted-text" style={{ marginTop: "1rem" }}>
+            Checking OpenClaw, gateway, provider config, and runtime readiness...
+          </p>
+        )}
 
         {launchResult && (
           <div style={{ marginTop: "1rem" }}>
