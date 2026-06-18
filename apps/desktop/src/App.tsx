@@ -142,8 +142,40 @@ export default function App() {
     setDoctorCommands(data.commands);
   }
 
-  async function generateProviderConfig() {
-    const res = await fetch("/api/provider-config", {
+  function validateProviderConfig() {
+    const trimmedApiKey = apiKey.trim();
+    const trimmedCustomModel = customModel.trim();
+    const trimmedOllamaHost = ollamaHost.trim();
+
+    if ((provider === "openai" || provider === "anthropic") && !trimmedApiKey) {
+      return `Please enter an API key before generating ${provider} config.`;
+    }
+
+    if (selectedModel === "custom" && !trimmedCustomModel) {
+      return "Please enter a custom model name before generating config.";
+    }
+
+    if (provider === "ollama" && !trimmedOllamaHost) {
+      return "Please enter an Ollama host before generating config.";
+    }
+
+    return "";
+  }
+
+    async function generateProviderConfig() {
+      const validationMessage = validateProviderConfig();
+
+      if (validationMessage) {
+        setConfigMessage(validationMessage);
+        setProviderConfig("");
+        setSaveMessage("");
+        return;
+      }
+
+      setConfigMessage("");
+      setSaveMessage("");
+
+      const res = await fetch("/api/provider-config", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -379,7 +411,17 @@ export default function App() {
           </button>
         </div>
 
-        {configMessage ? <p className="muted-text">{configMessage}</p> : null}
+        {configMessage ? (
+          <p
+            className={
+              configMessage.toLowerCase().startsWith("please")
+                ? "error-text"
+                : "muted-text"
+          }
+        >
+          {configMessage}
+        </p>
+      ) : null}
 
         {providerConfig && (
           <>
