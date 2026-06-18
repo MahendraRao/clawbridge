@@ -38,9 +38,6 @@ ClawBridge solves this by acting as a **local onboarding assistant and installat
 
 ### ✅ Working now
 
-- launch test agent preflight workflow
-
-
 #### Core platform
 - React + Vite frontend UI
 - local Express + TypeScript backend API
@@ -60,6 +57,8 @@ ClawBridge solves this by acting as a **local onboarding assistant and installat
 - latest recommended model selection
 - custom model input support
 - provider-specific env generation
+- frontend validation for required provider inputs
+- custom model validation before config generation
 
 #### Verification + diagnostics
 - OpenClaw version verification
@@ -68,6 +67,18 @@ ClawBridge solves this by acting as a **local onboarding assistant and installat
 - channels status probing
 - deep status verification
 - OpenClaw doctor execution
+- ANSI-clean command output in the UI
+- copy buttons for diagnostics output
+- loading states while diagnostics are running
+
+#### Launch Test Agent
+- safe launch preflight workflow
+- OpenClaw installation verification
+- gateway reachability verification
+- generated provider config detection
+- provider detection
+- OpenClaw status verification
+- stale results are cleared before a new launch test run
 
 #### Secure local config handling
 - local `.env.clawbridge` generation
@@ -77,7 +88,6 @@ ClawBridge solves this by acting as a **local onboarding assistant and installat
 ---
 
 ### 🔄 In progress
-- first-run launch orchestration
 - provider reachability testing
 - structured activity logs
 - richer diagnostics and troubleshooting UX
@@ -213,8 +223,9 @@ Start the project
    - Ollama
    - local/custom models
 
-7. generate local `.env.clawbridge`
-8. run verification commands:
+7. validate required provider inputs before config generation
+8. generate local `.env.clawbridge`
+9. run verification commands:
    - Version
    - Status
    - Gateway
